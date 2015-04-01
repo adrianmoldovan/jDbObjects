@@ -12,7 +12,7 @@ public interface DAO<T> {
     /**
      * Updates the entity.
      */
-    long update(T entity);
+    T update(T entity);
 
     /**
      * Deletes the entity.

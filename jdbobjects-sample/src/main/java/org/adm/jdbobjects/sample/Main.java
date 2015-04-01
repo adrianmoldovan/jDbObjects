@@ -1,9 +1,8 @@
 package org.adm.jdbobjects.sample;
 
-import org.adm.jdbobjects.ConnectionDetails;
+import java.util.List;
+
 import org.adm.jdbobjects.DatabaseConnection;
-import org.adm.jdbobjects.DatabaseManager;
-import org.adm.jdbobjects.SQLConnect;
 import org.adm.jdbobjects.dao.BasicDAO;
 
 public class Main {// TODO to transform in unit tests.
@@ -11,18 +10,18 @@ public class Main {// TODO to transform in unit tests.
 	try {
 	    User usr = new User();
 	    usr.setEmail("john.doe@example.com");
-	    usr.setName("John Doe");
-	    DatabaseManager.insert(usr);
-	    usr.setId(100);
-
-	    DatabaseManager.insert(usr);
-	    DatabaseManager.update(usr);
-	    DatabaseManager.delete(usr);
+	    usr.setName("John Doe111111111");
+	    usr.setId(112);
+	    BasicDAO<User> dao = new BasicDAO<User>(DatabaseConnection.getInstance().getConnection(), User.class);
+	    dao.update(usr);
+	    System.err.println(usr.getId());
 	    
-	    DatabaseConnection db = new DatabaseConnection();
-
-	    BasicDAO<User> dao = new BasicDAO<>(DatabaseConnection.getInstance().getConnection());
-	    dao.createInsertStatement(usr);
+	    List<User> all = dao.listAll();
+	    for (int i = 0; i < all.size(); i++) {
+		User user = all.get(i);
+		System.err.println(user.getId() + " " + user.getEmail()+ " " + user.getName());
+	    }
+	    
 	} catch (Exception e) {
 	    e.printStackTrace();
 	}
