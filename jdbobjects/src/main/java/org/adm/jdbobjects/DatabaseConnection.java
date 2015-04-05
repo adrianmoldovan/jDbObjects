@@ -38,8 +38,12 @@ public class DatabaseConnection {
 
     public DatabaseConnection() {
 	try {
-	    ConnectionDetails con = new ConnectionDetails(new File("D:\\adm\\Repositories\\jDbObjects\\jdbobjects-sample\\src\\main\\resources\\mysql.conf"));//TODO just for tests
-	    connection = DriverManager.getConnection(con.getURL(), con.getUser(), con.getPassword());
+	    ClassLoader classloader = Thread.currentThread()
+		    .getContextClassLoader();
+	    ConnectionDetails con = new ConnectionDetails(new File(classloader
+		    .getResource("mysql.conf").getFile()));
+	    connection = DriverManager.getConnection(con.getURL(),
+		    con.getUser(), con.getPassword());
 	} catch (Exception e) {
 	    LOGGER.error(e.getMessage(), e);
 	}

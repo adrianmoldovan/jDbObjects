@@ -18,6 +18,7 @@
  */
 package org.adm.jdbobjects.sample;
 
+import java.util.Date;
 import java.util.List;
 
 import org.adm.jdbobjects.DatabaseConnection;
@@ -30,8 +31,9 @@ public class Main {// TODO to transform in unit tests.
 	    usr.setEmail("john.doe@example.com");
 	    usr.setName("John Doe111111111");
 	    usr.setId(112);
+	    usr.setCreated(new Date());
 	    BasicDAO<User> dao = new BasicDAO<User>(DatabaseConnection.getInstance().getConnection(), User.class);
-	    dao.update(usr);
+	    dao.insert(usr);
 	    System.err.println(usr.getId());
 	    
 	    List<User> all = dao.listAll();

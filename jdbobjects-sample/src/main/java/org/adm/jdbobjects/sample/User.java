@@ -18,6 +18,8 @@
  */
 package org.adm.jdbobjects.sample;
 
+import java.util.Date;
+
 import org.adm.jdbobjects.annotation.DbEntity;
 import org.adm.jdbobjects.annotation.DbField;
 
@@ -32,6 +34,9 @@ public class User {
 
     @DbField(name = "email", type = String.class)
     private String email;
+    
+    @DbField(name= "created", type = Date.class)
+    private Date created;
 
     public long getId() {
 	return id;
@@ -55,5 +60,13 @@ public class User {
 
     public void setEmail(String email) {
 	this.email = email;
+    }
+
+    public Date getCreated() {
+        return created;
+    }
+
+    public void setCreated(Date created) {
+        this.created = created;
     }
 }
