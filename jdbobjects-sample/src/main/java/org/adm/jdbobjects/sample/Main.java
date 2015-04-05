@@ -33,13 +33,13 @@ public class Main {// TODO to transform in unit tests.
 	    usr.setId(112);
 	    usr.setCreated(new Date());
 	    BasicDAO<User> dao = new BasicDAO<User>(DatabaseConnection.getInstance().getConnection(), User.class);
-	    dao.insert(usr);
+	    //dao.insert(usr);
 	    System.err.println(usr.getId());
 	    
 	    List<User> all = dao.listAll();
 	    for (int i = 0; i < all.size(); i++) {
 		User user = all.get(i);
-		System.err.println(user.getId() + " " + user.getEmail()+ " " + user.getName());
+		System.err.println(user.getId() + " " + user.getEmail()+ " " + user.getName() + " " + user.getCreated());
 	    }
 	    
 	} catch (Exception e) {
