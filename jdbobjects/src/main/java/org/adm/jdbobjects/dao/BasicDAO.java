@@ -1,7 +1,6 @@
 package org.adm.jdbobjects.dao;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -316,7 +315,6 @@ public class BasicDAO<T> implements DAO<T> {
 	ArrayList<Hashtable<String, Object>> result = new ArrayList<Hashtable<String, Object>>();
 	ResultSet resultSet = null;
 	PreparedStatement statement = null;
-	Connection connection = null;
 	try {
 	    String id = UUID.randomUUID().toString();
 	    LOGGER.debug("DatabaseManager.doQuery[" + id + "]: " + query);
@@ -341,8 +339,6 @@ public class BasicDAO<T> implements DAO<T> {
 		}
 		result.add(obj);
 	    }
-	    LOGGER.debug("DatabaseManager.doQuery[" + id + "], result count: "
-		    + count);
 	} catch (Exception e) {
 	    LOGGER.error(e.toString(), e);
 	    throw new DatabaseQueryException();
@@ -358,7 +354,6 @@ public class BasicDAO<T> implements DAO<T> {
 	ArrayList<T> res = new ArrayList<T>();
 	ResultSet resultSet = null;
 	PreparedStatement statement = null;
-	Connection connection = null;
 	try {
 	    // Getting the prepared statement.
 	    statement = prepareStatement(connection, queryString, parameters);
@@ -384,38 +379,33 @@ public class BasicDAO<T> implements DAO<T> {
 	return res;
     }
 
-    public ArrayList<T> getAll(Class<T> type)
+    public ArrayList<T> getAll()
 	    throws Exception {
-	return getAll(type, "");
+	return getAll("");
     }
 
-    public ArrayList<T> getAll(Class<T> type,
-	    String appendedSqlString) throws Exception {
+    public ArrayList<T> getAll(String appendedSqlString) throws Exception {
 	String sqlString = "SELECT * FROM "
 		+ getTableName() + " "
 		+ appendedSqlString + "";
 	return doQuery(sqlString, new Object[] {}, type);
     }
 
-    public ArrayList<T> getByField(Class<T> type,
-	    String fieldName, Object fieldContent) throws Exception {
-	return getByField(type, fieldName, fieldContent, "");
+    public ArrayList<T> getByField(String fieldName, Object fieldContent) throws Exception {
+	return getByField(fieldName, fieldContent, "");
     }
 
-    public ArrayList<T> getByField(Class<T> type,
-	    String fieldName, Object fieldContent, String appendedSqlString)
+    public ArrayList<T> getByField(String fieldName, Object fieldContent, String appendedSqlString)
 	    throws Exception {
-	return getByFields(type, new String[] { fieldName },
+	return getByFields(new String[] { fieldName },
 		new Object[] { fieldContent }, appendedSqlString);
     }
 
-    public  ArrayList<T> getByFields(Class<T> type,
-	    String[] fieldsName, Object[] fieldsContent) throws Exception {
-	return getByFields(type, fieldsName, fieldsContent, "");
+    public  ArrayList<T> getByFields(String[] fieldsName, Object[] fieldsContent) throws Exception {
+	return getByFields(fieldsName, fieldsContent, "");
     }
 
-    public ArrayList<T> getByFields(Class<T> type,
-	    String[] fieldsName, Object[] fieldsContent,
+    public ArrayList<T> getByFields(String[] fieldsName, Object[] fieldsContent,
 	    String appendedSqlString) throws Exception {
 	T obj = type.newInstance();
 
@@ -440,25 +430,23 @@ public class BasicDAO<T> implements DAO<T> {
 	return doQuery(sqlString, new Object[] {}, type);
     }
 
-    public T getObjectDBbyID(Class<T> type, long id)
+    public T getObjectDBbyID(long id)
 	    throws Exception {
-	ArrayList<T> res = getByField(type, "id", id + "");
+	ArrayList<T> res = getByField("id", id + "");
 	if (res != null && res.size() > 0)
 	    return res.get(0);
 	return null;
     }
 
-    public T getObjectDBbyField(Class<T> type,
-	    String field, String value) throws Exception {
-	ArrayList<T> res = getByField(type, field, value);
+    public T getObjectDBbyField(String field, String value) throws Exception {
+	ArrayList<T> res = getByField(field, value);
 	if (res != null && res.size() > 0)
 	    return res.get(0);
 	return null;
     }
 
-    public T getObjectDBbyFields(Class<T> type,
-	    String[] field, String[] value) throws Exception {
-	ArrayList<T> res = getByFields(type, field, value);
+    public T getObjectDBbyFields(String[] field, String[] value) throws Exception {
+	ArrayList<T> res = getByFields(field, value);
 	if (res != null && res.size() > 0)
 	    return res.get(0);
 	return null;
