@@ -29,14 +29,14 @@ public class Main {// TODO to transform in unit tests.
 	try {
 	    User usr = new User();
 	    usr.setEmail("john.doe@example.com");
-	    usr.setName("John Doe111111111");
+	    usr.setName("John Doe");
 	    usr.setId(112);
 	    usr.setCreated(new Date());
 	    BasicDAO<User> dao = new BasicDAO<User>(DatabaseConnection.getInstance().getConnection(), User.class);
 	    //dao.insert(usr);
 	    System.err.println(usr.getId());
 	    
-	    List<User> all = dao.listAll();
+	    List<User> all = dao.find();
 	    for (int i = 0; i < all.size(); i++) {
 		User user = all.get(i);
 		System.err.println(user.getId() + " " + user.getEmail()+ " " + user.getName() + " " + user.getCreated());

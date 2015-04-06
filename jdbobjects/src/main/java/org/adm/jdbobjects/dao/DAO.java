@@ -19,12 +19,35 @@ public interface DAO<T> {
      */
     boolean delete(T entity);
 
-    List<T> listAll();
+    
+    /**
+     * returns all entities
+     */
+    List<T> find();
 
-    T findByID(long id);
+    /**
+     * returns the entity matching criteria {field:value}
+     */
+    T findOne(String field, Object value);
+    
+    /**
+     * returns the entity matching criteria
+     */
+    T findOne(String query);
 
+    /**
+     * returns the entities matching the criteria
+     */
     List<T> listByField(String field, Object value);
     
-    List<T> listByFields(String[] field, Object[] value);
+    /**
+     * returns the entities matching the criteria
+     */
+    List<T> listByFields(List<String> fields, List<Object> values);
+    
+    /**
+     * returns the total count
+     */
+    long count();
 
 }

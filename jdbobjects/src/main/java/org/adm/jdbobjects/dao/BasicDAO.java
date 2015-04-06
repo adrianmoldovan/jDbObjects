@@ -88,7 +88,7 @@ public class BasicDAO<T> implements DAO<T> {
     }
 
     @Override
-    public List<T> listAll() {
+    public List<T> find() {
 	try {
 	    if (type.isAnnotationPresent(DbEntity.class)) {
 		DbEntity entityA = type.getAnnotation(DbEntity.class);
@@ -101,7 +101,7 @@ public class BasicDAO<T> implements DAO<T> {
 		ResultSet rs = statement.executeQuery(query.toString());
 		List<T> result = new ArrayList<T>();
 		while (rs.next()) {
-		    T object = setField(rs);
+		    T object = setFields(rs);
 		    result.add(object);
 		}
 		return result;
@@ -113,7 +113,7 @@ public class BasicDAO<T> implements DAO<T> {
 	}
     }
 
-    private T setField(ResultSet rs) throws Exception {
+    private T setFields(ResultSet rs) throws Exception {
 	T object = type.newInstance();
 	for (Field field : object.getClass().getDeclaredFields()) {
 	    DbField dbField = field.getAnnotation(DbField.class);
@@ -140,19 +140,21 @@ public class BasicDAO<T> implements DAO<T> {
     }
 
     @Override
-    public T findByID(long id) {
+    public T findOne(String field, Object value) {
 	try {
 	    if (type.isAnnotationPresent(DbEntity.class)) {
 		DbEntity entityA = type.getAnnotation(DbEntity.class);
 		StringBuilder query = new StringBuilder();
 		query.append("SELECT * FROM ");
-		query.append(" `"+entityA.name()+"`;");
+		query.append(" `"+entityA.name()+"`");
+		query.append(" WHERE ");
+		query.append(field + "='"+value+"';");
 		System.err.println(query);
 		PreparedStatement statement = this.connection
 			.prepareStatement(query.toString());
 		ResultSet rs = statement.executeQuery(query.toString());
 		while (rs.next()) {
-		    T object = setField(rs);
+		    T object = setFields(rs);
 		    return object;
 		}
 	    }
@@ -169,7 +171,7 @@ public class BasicDAO<T> implements DAO<T> {
     }
 
     @Override
-    public List<T> listByFields(String[] field, Object[] value) {
+    public List<T> listByFields(List<String> fields,  List<Object> values) {
 	// TODO Auto-generated method stub
 	return null;
     }
@@ -310,33 +312,17 @@ public class BasicDAO<T> implements DAO<T> {
     
     
     ///////////////////////////////////////////
-    public ArrayList<Hashtable<String, Object>> doQuery(String query)
+    public ArrayList<T> doQuery(String query)
 	    throws DatabaseQueryException {
-	ArrayList<Hashtable<String, Object>> result = new ArrayList<Hashtable<String, Object>>();
+	ArrayList<T> result = new ArrayList<T>();
 	ResultSet resultSet = null;
 	PreparedStatement statement = null;
 	try {
-	    String id = UUID.randomUUID().toString();
-	    LOGGER.debug("DatabaseManager.doQuery[" + id + "]: " + query);
 	    statement = connection.prepareStatement(query);
 	    // Executing the query.
-
 	    resultSet = statement.executeQuery();
-	    ResultSetMetaData rsmd = resultSet.getMetaData();
-	    int columnsNumber = rsmd.getColumnCount();
-	    int count = 0;
 	    while (resultSet.next()) {
-		count++;
-		Hashtable<String, Object> obj = new Hashtable<String, Object>();
-		for (int i = 0; i < columnsNumber; i++) {
-		    try {
-			Object val = resultSet.getObject(i + 1);
-			if (val != null)
-			    obj.put(rsmd.getColumnLabel(i + 1), val);
-		    } catch (Exception ex) {
-
-		    }
-		}
+		T obj = setFields(resultSet);
 		result.add(obj);
 	    }
 	} catch (Exception e) {
@@ -366,7 +352,7 @@ public class BasicDAO<T> implements DAO<T> {
 	    // invoking the
 	    // corresponding set-methods.
 	    while (resultSet.next()) {
-		T obj = setField(resultSet);
+		T obj = setFields(resultSet);
 		res.add(obj);
 	    }
 
@@ -492,25 +478,13 @@ public class BasicDAO<T> implements DAO<T> {
 	return prepareStatement(connection, sqlString, parameters, -1);
     }
 
-    public long getCount(String tableName, String where)
-	    throws DatabaseQueryException {
-	String query = "SELECT COUNT(*) as `count` FROM `" + tableName + "`";
-	if (where != null && !where.isEmpty()) {
-	    query = query + " WHERE " + where;
-	}
-	ArrayList<Hashtable<String, Object>> rsp = doQuery(query);
-	if (rsp == null || rsp.size() < 1)
-	    return 0;
-
-	if (rsp.get(0) == null)
-	    return 0;
-	if (rsp.get(0).get("count") == null)
-	    return 0;
-	try {
-	    return (Long) rsp.get(0).get("count");
-	} catch (Exception e) {
-	    return 0;
-	}
+    @Override
+    public T findOne(String query) {
+	return null;
     }
 
+    @Override
+    public long count() {
+	return 0;
+    }
 }
