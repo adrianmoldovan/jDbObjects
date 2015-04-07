@@ -1,5 +1,5 @@
 # jDbObjects
-Java lightweight library for storing and retrieving java objects in and from relational databases based on JDBC. Currently support only MySQL.
+Java lightweight library for storing and retrieving java objects in and from relational databases based on JDBC. Currently support only MySQL. It's a work in progress...
 
 # Settings
 A configuration file is needed in main/resources folder, named mysql.conf
