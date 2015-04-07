@@ -2,18 +2,10 @@ package org.adm.jdbobjects.dao;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
-import java.util.UUID;
 
 import org.adm.jdbobjects.DatabaseConnection;
 import org.adm.jdbobjects.annotation.DbEntity;
@@ -42,7 +34,7 @@ public class BasicDAO<T> implements DAO<T> {
 	    int result = stmt.executeUpdate();
 	    if (result != 1)
 		return null;
-	    long id = getLastInsertedID(connection);
+	    long id = getLastInsertedID();
 
 	    for (Field field : entity.getClass().getDeclaredFields()) {
 		DbField dbField = field.getAnnotation(DbField.class);
@@ -94,49 +86,14 @@ public class BasicDAO<T> implements DAO<T> {
 		DbEntity entityA = type.getAnnotation(DbEntity.class);
 		StringBuilder query = new StringBuilder();
 		query.append("SELECT * FROM ");
-		query.append(" `"+entityA.name()+"`;");
-		System.err.println(query);
-		PreparedStatement statement = this.connection
-			.prepareStatement(query.toString());
-		ResultSet rs = statement.executeQuery(query.toString());
-		List<T> result = new ArrayList<T>();
-		while (rs.next()) {
-		    T object = setFields(rs);
-		    result.add(object);
-		}
-		return result;
+		query.append(" `" + entityA.name() + "`;");
+		return doQuery(query.toString());
 	    }
 	    return null;
 	} catch (Exception e) {
 	    LOGGER.fatal(e.getMessage(), e);
 	    return null;
 	}
-    }
-
-    private T setFields(ResultSet rs) throws Exception {
-	T object = type.newInstance();
-	for (Field field : object.getClass().getDeclaredFields()) {
-	    DbField dbField = field.getAnnotation(DbField.class);
-	    if (dbField == null)
-		continue;
-	    field.setAccessible(true);
-	    if (dbField.type().equals(String.class)) {
-		field.set(object, rs.getString(dbField.name()));
-	    } else if (dbField.type().equals(Long.class)) {
-		field.set(object, rs.getLong(dbField.name()));
-	    } else if (dbField.type().equals(java.util.Date.class)) {
-		field.set(object, rs.getDate(dbField.name()));
-	    } else if (dbField.type().equals(Integer.class)) {
-		field.set(object, rs.getInt(dbField.name()));
-	    } else if (dbField.type().equals(Boolean.class)) {
-		field.set(object, rs.getBoolean(dbField.name()));
-	    } else if (dbField.type().equals(Double.class)) {
-		field.set(object, rs.getDouble(dbField.name()));
-	    } else if (dbField.type().equals(Float.class)) {
-		field.set(object, rs.getFloat(dbField.name()));
-	    }
-	}
-	return object;
     }
 
     @Override
@@ -146,17 +103,10 @@ public class BasicDAO<T> implements DAO<T> {
 		DbEntity entityA = type.getAnnotation(DbEntity.class);
 		StringBuilder query = new StringBuilder();
 		query.append("SELECT * FROM ");
-		query.append(" `"+entityA.name()+"`");
+		query.append(" `" + entityA.name() + "`");
 		query.append(" WHERE ");
-		query.append(field + "='"+value+"';");
-		System.err.println(query);
-		PreparedStatement statement = this.connection
-			.prepareStatement(query.toString());
-		ResultSet rs = statement.executeQuery(query.toString());
-		while (rs.next()) {
-		    T object = setFields(rs);
-		    return object;
-		}
+		query.append(field + "='" + value + "';");
+		return findOne(query.toString());
 	    }
 	    return null;
 	} catch (Exception e) {
@@ -166,22 +116,81 @@ public class BasicDAO<T> implements DAO<T> {
     }
 
     @Override
-    public List<T> listByField(String field, Object value) {
-	return null;
+    public T findOne(String query) {
+	try {
+	    List<T> result = doQuery(query);
+	    if (result.size() > 0)
+		return result.get(0);
+	    return null;
+	} catch (Exception e) {
+	    LOGGER.fatal(e.getMessage(), e);
+	    return null;
+	}
     }
 
     @Override
-    public List<T> listByFields(List<String> fields,  List<Object> values) {
-	// TODO Auto-generated method stub
-	return null;
+    public List<T> listByField(String field, Object value) {
+	List<String> fields = new ArrayList<>();
+	fields.add(field);
+	List<Object> values = new ArrayList<>();
+	values.add(value);
+	return listByFields(fields, values);
+    }
+
+    @Override
+    public List<T> listByFields(List<String> fields, List<Object> values) {
+	if (fields.size() != values.size())
+	    return null;
+	try {
+	    if (type.isAnnotationPresent(DbEntity.class)) {
+		DbEntity entityA = type.getAnnotation(DbEntity.class);
+		StringBuilder query = new StringBuilder();
+		query.append("SELECT * FROM ");
+		query.append(" `" + entityA.name() + "`");
+
+		String where = "";
+		for (int i = 0; i < fields.size(); i++) {
+		    if (where.length() > 0)
+			where += " AND ";
+		    where += fields.get(i) + "='" + values.get(i) + "'";
+		}
+		if (where.length() > 0) {
+		    query.append(" WHERE ").append(where);
+		}
+		return doQuery(query.toString());
+	    }
+	    return null;
+	} catch (Exception e) {
+	    LOGGER.fatal(e.getMessage(), e);
+	    return null;
+	}
+    }
+
+    @Override
+    public long count() {
+	try {
+	    if (type.isAnnotationPresent(DbEntity.class)) {
+		String query = "SELECT COUNT(*) as `count` FROM `"
+			+ getTableName() + "`;";
+		Object obj = doQueryValue(query);
+		try {
+		    return (Long) obj;
+		} catch (Exception e) {
+		    return 0;
+		}
+	    }
+	    return 0;
+	} catch (Exception e) {
+	    LOGGER.fatal(e.getMessage(), e);
+	    return 0;
+	}
     }
 
     private PreparedStatement createInsertStatement(T obj) throws Exception {
 	if (obj.getClass().isAnnotationPresent(DbEntity.class)) {
-	    DbEntity entityA = obj.getClass().getAnnotation(DbEntity.class);
 	    StringBuilder query = new StringBuilder();
 	    query.append("INSERT INTO");
-	    query.append(" `" + entityA.name() + "` ");
+	    query.append(" `" + getTableName() + "` ");
 	    query.append(" (");
 
 	    String fields = "";
@@ -204,7 +213,6 @@ public class BasicDAO<T> implements DAO<T> {
 		field.setAccessible(true);
 		statement.setObject(i++, field.get(obj));
 	    }
-	    System.err.println(statement.toString());
 	    return statement;
 	}
 	return null;
@@ -212,8 +220,7 @@ public class BasicDAO<T> implements DAO<T> {
 
     private PreparedStatement createUpdateStatement(T obj) throws Exception {
 	if (obj.getClass().isAnnotationPresent(DbEntity.class)) {
-	    DbEntity entityA = obj.getClass().getAnnotation(DbEntity.class);
-	    String table = entityA.name();
+	    String table = getTableName();
 	    StringBuilder query = new StringBuilder();
 	    query.append("UPDATE");
 	    query.append(" `" + table + "` ");
@@ -251,8 +258,7 @@ public class BasicDAO<T> implements DAO<T> {
 
     private PreparedStatement createDeleteStatement(T obj) throws Exception {
 	if (obj.getClass().isAnnotationPresent(DbEntity.class)) {
-	    DbEntity entityA = obj.getClass().getAnnotation(DbEntity.class);
-	    String table = entityA.name();
+	    String table = getTableName();
 	    StringBuilder query = new StringBuilder();
 	    query.append("DELETE FROM");
 	    query.append(" `" + table + "`");
@@ -268,20 +274,6 @@ public class BasicDAO<T> implements DAO<T> {
 	    return statement;
 	}
 	return null;
-    }
-
-    public static long getLastInsertedID(Connection connection)
-	    throws Exception {
-	PreparedStatement statement = null;
-	ResultSet rs = null;
-
-	statement = connection
-		.prepareStatement("SELECT LAST_INSERT_ID() AS last_id");
-	rs = statement.executeQuery();
-	if (rs.next()) {
-	    return rs.getLong("last_id");
-	}
-	return 0;
     }
 
     private Field getPrimaryKey(T entity) throws Exception {
@@ -300,8 +292,8 @@ public class BasicDAO<T> implements DAO<T> {
 	}
 	return null;
     }
-    
-    private String getTableName(){
+
+    private String getTableName() {
 	if (type.isAnnotationPresent(DbEntity.class)) {
 	    DbEntity entityA = type.getAnnotation(DbEntity.class);
 	    if (entityA != null)
@@ -309,12 +301,22 @@ public class BasicDAO<T> implements DAO<T> {
 	}
 	return null;
     }
-    
-    
-    ///////////////////////////////////////////
-    public ArrayList<T> doQuery(String query)
-	    throws DatabaseQueryException {
-	ArrayList<T> result = new ArrayList<T>();
+
+    public long getLastInsertedID() throws Exception {
+	PreparedStatement statement = null;
+	ResultSet rs = null;
+
+	statement = this.connection
+		.prepareStatement("SELECT LAST_INSERT_ID() AS last_id");
+	rs = statement.executeQuery();
+	if (rs.next()) {
+	    return rs.getLong("last_id");
+	}
+	return 0;
+    }
+
+    public List<T> doQuery(String query) throws DatabaseQueryException {
+	List<T> result = new ArrayList<T>();
 	ResultSet resultSet = null;
 	PreparedStatement statement = null;
 	try {
@@ -334,157 +336,48 @@ public class BasicDAO<T> implements DAO<T> {
 	return result;
     }
 
-    private ArrayList<T> doQuery(
-	    String queryString, Object[] parameters, Class<T> type)
-	    throws Exception {
-	ArrayList<T> res = new ArrayList<T>();
+    public Object doQueryValue(String query) throws DatabaseQueryException {
 	ResultSet resultSet = null;
 	PreparedStatement statement = null;
 	try {
-	    // Getting the prepared statement.
-	    statement = prepareStatement(connection, queryString, parameters);
-
+	    statement = connection.prepareStatement(query);
 	    // Executing the query.
-	    LOGGER.debug("DatabaseManager.doQuery: " + statement);
 	    resultSet = statement.executeQuery();
-
-	    // Creating new objects of given class by analyzing each field and
-	    // invoking the
-	    // corresponding set-methods.
 	    while (resultSet.next()) {
-		T obj = setFields(resultSet);
-		res.add(obj);
+		return resultSet.getObject(1);
 	    }
-
 	} catch (Exception e) {
 	    LOGGER.error(e.toString(), e);
-	    throw e;
+	    throw new DatabaseQueryException();
 	} finally {
 	    DatabaseConnection.close(resultSet, statement, connection);
 	}
-	return res;
-    }
-
-    public ArrayList<T> getAll()
-	    throws Exception {
-	return getAll("");
-    }
-
-    public ArrayList<T> getAll(String appendedSqlString) throws Exception {
-	String sqlString = "SELECT * FROM "
-		+ getTableName() + " "
-		+ appendedSqlString + "";
-	return doQuery(sqlString, new Object[] {}, type);
-    }
-
-    public ArrayList<T> getByField(String fieldName, Object fieldContent) throws Exception {
-	return getByField(fieldName, fieldContent, "");
-    }
-
-    public ArrayList<T> getByField(String fieldName, Object fieldContent, String appendedSqlString)
-	    throws Exception {
-	return getByFields(new String[] { fieldName },
-		new Object[] { fieldContent }, appendedSqlString);
-    }
-
-    public  ArrayList<T> getByFields(String[] fieldsName, Object[] fieldsContent) throws Exception {
-	return getByFields(fieldsName, fieldsContent, "");
-    }
-
-    public ArrayList<T> getByFields(String[] fieldsName, Object[] fieldsContent,
-	    String appendedSqlString) throws Exception {
-	T obj = type.newInstance();
-
-	String sqlString = "SELECT * FROM " + getTableName()
-		+ " WHERE ";
-	for (int i = 0; i < fieldsName.length; i++) {
-	    String columnName = fieldsName[i];
-	    sqlString += "`" + columnName + "`=? ";
-	    if (i < fieldsName.length - 1)
-		sqlString += " AND ";
-	}
-	sqlString += appendedSqlString + "";
-	return doQuery(sqlString, fieldsContent, type);
-    }
-
-    public ArrayList<T> getByWhereClause(
-	    Class<T> type, String whereClause) throws Exception {
-	String sqlString = "SELECT * FROM "
-		+ getTableName() + " WHERE "
-		+ whereClause + "";
-
-	return doQuery(sqlString, new Object[] {}, type);
-    }
-
-    public T getObjectDBbyID(long id)
-	    throws Exception {
-	ArrayList<T> res = getByField("id", id + "");
-	if (res != null && res.size() > 0)
-	    return res.get(0);
 	return null;
     }
 
-    public T getObjectDBbyField(String field, String value) throws Exception {
-	ArrayList<T> res = getByField(field, value);
-	if (res != null && res.size() > 0)
-	    return res.get(0);
-	return null;
-    }
-
-    public T getObjectDBbyFields(String[] field, String[] value) throws Exception {
-	ArrayList<T> res = getByFields(field, value);
-	if (res != null && res.size() > 0)
-	    return res.get(0);
-	return null;
-    }
-
-      public static PreparedStatement prepareStatement(Connection connection,
-	    String sqlString, Object[] parameters, int returnKey)
-	    throws SQLException {
-
-	PreparedStatement statement = null;
-	if (returnKey == Statement.RETURN_GENERATED_KEYS)
-	    statement = connection.prepareStatement(sqlString, returnKey);
-	else
-	    statement = connection.prepareStatement(sqlString, returnKey);
-	statement.clearParameters();
-	for (int i = 0; i < parameters.length; i++) {
-	    if (parameters[i] instanceof String) {
-		statement.setString(i + 1, (String) parameters[i]);
-	    } else if (parameters[i] instanceof Integer) {
-		statement.setInt(i + 1, ((Integer) parameters[i]).intValue());
-	    } else if (parameters[i] instanceof Long) {
-		statement.setLong(i + 1, ((Long) parameters[i]).longValue());
-	    } else if (parameters[i] instanceof Float) {
-		statement.setFloat(i + 1, ((Float) parameters[i]).floatValue());
-	    } else if (parameters[i] instanceof Double) {
-		statement.setDouble(i + 1,
-			((Double) parameters[i]).doubleValue());
-	    } else if (parameters[i] instanceof Date) {
-		statement.setDate(i + 1, ((Date) parameters[i]));
-	    } else if (parameters[i] instanceof Time) {
-		statement.setTime(i + 1, ((Time) parameters[i]));
-	    } else if (parameters[i] instanceof Timestamp) {
-		statement.setTimestamp(i + 1, ((Timestamp) parameters[i]));
-	    } else {
-		statement.setObject(i + 1, parameters[i]);
+    private T setFields(ResultSet rs) throws Exception {
+	T object = type.newInstance();
+	for (Field field : object.getClass().getDeclaredFields()) {
+	    DbField dbField = field.getAnnotation(DbField.class);
+	    if (dbField == null)
+		continue;
+	    field.setAccessible(true);
+	    if (dbField.type().equals(String.class)) {
+		field.set(object, rs.getString(dbField.name()));
+	    } else if (dbField.type().equals(Long.class)) {
+		field.set(object, rs.getLong(dbField.name()));
+	    } else if (dbField.type().equals(java.util.Date.class)) {
+		field.set(object, rs.getDate(dbField.name()));
+	    } else if (dbField.type().equals(Integer.class)) {
+		field.set(object, rs.getInt(dbField.name()));
+	    } else if (dbField.type().equals(Boolean.class)) {
+		field.set(object, rs.getBoolean(dbField.name()));
+	    } else if (dbField.type().equals(Double.class)) {
+		field.set(object, rs.getDouble(dbField.name()));
+	    } else if (dbField.type().equals(Float.class)) {
+		field.set(object, rs.getFloat(dbField.name()));
 	    }
 	}
-	return statement;
-    }
-
-    public PreparedStatement prepareStatement(Connection connection,
-	    String sqlString, Object[] parameters) throws SQLException {
-	return prepareStatement(connection, sqlString, parameters, -1);
-    }
-
-    @Override
-    public T findOne(String query) {
-	return null;
-    }
-
-    @Override
-    public long count() {
-	return 0;
+	return object;
     }
 }
