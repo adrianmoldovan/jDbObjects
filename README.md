@@ -4,6 +4,7 @@ Java lightweight library for storing and retrieving java objects in and from rel
 # Settings
 A configuration file is needed in main/resources folder, named mysql.conf
 e.g. file:
+
       className=com.mysql.jdbc.Driver
       host=jdbc:mysql://127.0.0.1
       port=3306
@@ -17,12 +18,14 @@ e.g. file:
 # Usage
 
 Define an Entity:
+
       @DbEntity(name = "user")
       public class User {
       .....
       }
 
 Define a Property:
+
       @DbField(name = "id", isPrimaryKey = true, type = Long.class)
       private long id;
 
@@ -36,6 +39,7 @@ Save the Entity:
 	    dao.insert(usr);
 	    
 Read all Entities:
+
       BasicDAO<User> dao = new BasicDAO<User>(DatabaseConnection.getInstance().getConnection(), User.class);
 	    List<User> all = dao.find();
 	    for (int i = 0; i < all.size(); i++) {
