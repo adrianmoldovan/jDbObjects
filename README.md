@@ -52,3 +52,5 @@ Read all Entities:
 - make configurable how settings are loaded;
 - add foreign key details and data load;
 - port to different database systems: PostgreSQL, MSSQL, Oracle;
+- add unit testing;
+- update documentation;
